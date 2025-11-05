@@ -30,9 +30,13 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
+          flutter clean
+          flutter pub get
           flutter build web --release --base-href="/glearn-demo/" \
             --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY:-}" \
             --dart-define=YOUTUBE_API_KEY="${YOUTUBE_API_KEY:-}"
+          echo "=== Verifying base-href ==="
+          grep "base href" build/web/index.html || echo "ERROR: base-href not found!"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
