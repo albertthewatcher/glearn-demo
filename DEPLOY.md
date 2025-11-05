@@ -14,12 +14,12 @@ git push origin main
 ```
 
 인증 문제가 발생하면:
-- GitHub Personal Access Token 사용: `git remote set-url origin https://YOUR_TOKEN@github.com/albertthewatcher/glearn.git`
-- 또는 SSH 사용: `git remote set-url origin git@github.com:albertthewatcher/glearn.git`
+- GitHub Personal Access Token 사용: `git remote set-url origin https://YOUR_TOKEN@github.com/albertthewatcher/glearn-demo.git`
+- 또는 SSH 사용: `git remote set-url origin git@github.com:albertthewatcher/glearn-demo.git`
 
 ### 2. GitHub Pages 활성화
 
-1. GitHub 리포지토리로 이동: https://github.com/albertthewatcher/glearn
+1. GitHub 리포지토리로 이동: https://github.com/albertthewatcher/glearn-demo
 2. Settings > Pages 메뉴로 이동
 3. Source를 "GitHub Actions"로 선택
 4. 저장
@@ -28,7 +28,7 @@ git push origin main
 
 - Actions 탭에서 워크플로우 실행 상태 확인
 - 완료되면 Settings > Pages에서 배포 URL 확인
-- 일반적으로: `https://albertthewatcher.github.io/glearn/`
+- 일반적으로: `https://albertthewatcher.github.io/glearn-demo/`
 
 ## 수동 배포
 
