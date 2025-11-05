@@ -37,7 +37,7 @@ ThemeData buildGalaxyTheme(Brightness brightness) {
     ),
   );
 
-  TextTheme _applyFallbacks(TextTheme theme) {
+  TextTheme applyFallbacks(TextTheme theme) {
     List<String> fallbacks = const [
       'Noto Sans KR',
       'Roboto',
@@ -78,7 +78,7 @@ ThemeData buildGalaxyTheme(Brightness brightness) {
   );
 
   // Apply Noto Sans KR fallbacks for Korean rendering
-  final textTheme = _applyFallbacks(interBase);
+  final textTheme = applyFallbacks(interBase);
 
   return base.copyWith(
     textTheme: textTheme,

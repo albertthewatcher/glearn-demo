@@ -1,5 +1,6 @@
 /// 대화 데이터 모델 및 샘플 데이터
 /// 이 파일을 수정하여 대화 내용을 변경할 수 있습니다.
+library;
 
 class Message {
   const Message({
