@@ -13,6 +13,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,13 +24,20 @@ jobs:
           channel: 'stable'
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          echo "📦 Installing dependencies..."
+          flutter pub get
+          echo "✅ Dependencies installed"
 
       - name: Build web
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        run: flutter build web --release --base-href="/glearn-demo/" --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY:-}" --dart-define=YOUTUBE_API_KEY="${YOUTUBE_API_KEY:-}"
+        run: |
+          echo "🏗️ Building Flutter web app..."
+          flutter build web --release --base-href="/glearn-demo/" --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY:-}" --dart-define=YOUTUBE_API_KEY="${YOUTUBE_API_KEY:-}"
+          echo "✅ Build completed"
+          ls -la build/web/ | head -10
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
