@@ -3,7 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../theme.dart';
 
 class Sidebar extends StatelessWidget {
-  const Sidebar({super.key});
+  const Sidebar({super.key, this.onReset});
+
+  final VoidCallback? onReset;
 
   @override
   Widget build(BuildContext context) {
@@ -17,23 +19,27 @@ class Sidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/icons/Samsung_icon.svg',
-                width: 48,
-                height: 48,
-              ),
-              const SizedBox(width: 8),
-              SelectableText(
-                'Galaxy\nLearning',
-                style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                  height: 1.1,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+          InkWell(
+            onTap: onReset,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/Samsung_icon.svg',
+                  width: 48,
+                  height: 48,
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                SelectableText(
+                  'Galaxy\nLearning',
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    height: 1.1,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           _Section(
@@ -45,7 +51,11 @@ class Sidebar extends StatelessWidget {
                 showRedDot: true,
                 isActive: true,
                 onTap: () {
-                  Navigator.of(context).pushNamed('/page1');
+                  if (onReset != null) {
+                    onReset!();
+                  } else {
+                    Navigator.of(context).pushNamed('/page1');
+                  }
                 },
               ),
               const _Item(Icons.dashboard, 'Dashboard'),
@@ -54,8 +64,6 @@ class Sidebar extends StatelessWidget {
               _Item(
                 Icons.smart_toy_outlined,
                 'Teaching Assistant',
-                showRedDot: true,
-                isActive: true,
                 onTap: () {
                   Navigator.of(context).pushNamed('/page2');
                 },
@@ -73,8 +81,6 @@ class Sidebar extends StatelessWidget {
               _Item(
                 Icons.flash_on_outlined,
                 'Micro-Learning',
-                showRedDot: true,
-                isActive: true,
                 onTap: () {
                   Navigator.of(context).pushNamed('/page3');
                 },

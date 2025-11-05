@@ -9,9 +9,20 @@ import '../theme.dart';
 import '../config/api_config.dart';
 
 class AICounselingBox extends StatefulWidget {
-  const AICounselingBox({super.key, this.messages});
+  const AICounselingBox({
+    super.key,
+    this.messages,
+    this.onVideoSelected,
+    this.selectedVideoUrl,
+    this.selectedVideoTitle,
+    this.selectedVideoDescription,
+  });
 
   final List<Message>? messages;
+  final Function(String videoUrl)? onVideoSelected;
+  final String? selectedVideoUrl;
+  final String? selectedVideoTitle;
+  final String? selectedVideoDescription;
 
   @override
   State<AICounselingBox> createState() => _AICounselingBoxState();
@@ -33,6 +44,105 @@ class _AICounselingBoxState extends State<AICounselingBox> {
     _initializeModel();
   }
 
+  @override
+  void didUpdateWidget(AICounselingBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 영상이 선택되거나 변경되었을 때 시스템 프롬프트 업데이트
+    final videoUrlChanged = widget.selectedVideoUrl != oldWidget.selectedVideoUrl;
+    final videoTitleChanged = widget.selectedVideoTitle != oldWidget.selectedVideoTitle;
+    final videoDescriptionChanged = widget.selectedVideoDescription != oldWidget.selectedVideoDescription;
+    
+    // 영상 URL이 변경되거나 영상 정보가 로드되면 프롬프트 업데이트
+    if (videoUrlChanged || videoTitleChanged || videoDescriptionChanged) {
+      _updateSystemPrompt();
+      
+      // 영상이 새로 선택된 경우 채팅 히스토리 초기화 (시스템 메시지 제외)
+      if (widget.selectedVideoUrl != null && oldWidget.selectedVideoUrl == null) {
+        // 시스템 메시지만 남기고 나머지 제거
+        final systemMessage = _chatHistory.isNotEmpty && _chatHistory[0]['role'] == 'system'
+            ? _chatHistory[0]
+            : null;
+        _chatHistory.clear();
+        if (systemMessage != null) {
+          _chatHistory.add(systemMessage);
+        }
+        // 메시지 목록도 초기화
+        setState(() {
+          _messages = [];
+        });
+      }
+    }
+  }
+
+  void _updateSystemPrompt() {
+    if (widget.selectedVideoUrl != null) {
+      // 영상이 선택된 경우 - 해당 영상에 대한 Tutor로 변경
+      final hasVideoInfo = widget.selectedVideoTitle != null && 
+                           widget.selectedVideoDescription != null;
+      
+      String videoInfoSection = '';
+      if (hasVideoInfo) {
+        videoInfoSection = '''
+[현재 시청 중인 영상]
+제목: ${widget.selectedVideoTitle ?? ''}
+설명: ${widget.selectedVideoDescription != null && widget.selectedVideoDescription!.length > 300 
+  ? widget.selectedVideoDescription!.substring(0, 300) + '...' 
+  : widget.selectedVideoDescription ?? ''}
+''';
+      } else {
+        videoInfoSection = '''
+[현재 시청 중인 영상]
+영상 URL: ${widget.selectedVideoUrl}
+영상 정보를 로드하는 중입니다...
+''';
+      }
+      
+      final videoSpecificPrompt = '''
+당신은 현재 시청 중인 YouTube 영상에 대한 전문 AI Tutor입니다.
+
+$videoInfoSection
+[역할]
+- 학습자가 현재 시청 중인 영상의 내용을 이해하고 학습할 수 있도록 도와줍니다.
+- 영상에서 다루는 개념, 내용, 예시에 대해 설명하고 질문에 답변합니다.
+- 영상의 핵심 내용을 요약하고, 추가 학습 자료를 제안할 수 있습니다.
+
+[규칙]
+1. 반드시 현재 시청 중인 영상의 내용에만 집중합니다.
+2. 영상과 관련 없는 질문에는 정중하게 현재 영상에 대한 질문을 요청합니다.
+3. 영상의 내용을 바탕으로 명확하고 도움이 되는 답변을 제공합니다.
+4. 답변은 한국어로 작성합니다.
+5. 간결하고 이해하기 쉽게 설명합니다.
+6. 영상 정보가 아직 로드 중인 경우, 사용자에게 잠시 기다려달라고 안내할 수 있습니다.
+''';
+      
+      // 시스템 메시지 업데이트
+      if (_chatHistory.isNotEmpty && _chatHistory[0]['role'] == 'system') {
+        _chatHistory[0] = {
+          'role': 'system',
+          'content': videoSpecificPrompt,
+        };
+      } else {
+        _chatHistory.insert(0, {
+          'role': 'system',
+          'content': videoSpecificPrompt,
+        });
+      }
+    } else {
+      // 영상이 선택되지 않은 경우 - 기본 프롬프트로 복원
+      if (_chatHistory.isNotEmpty && _chatHistory[0]['role'] == 'system') {
+        _chatHistory[0] = {
+          'role': 'system',
+          'content': ApiConfig.systemPrompt,
+        };
+      } else {
+        _chatHistory.insert(0, {
+          'role': 'system',
+          'content': ApiConfig.systemPrompt,
+        });
+      }
+    }
+  }
+
   Future<void> _initializeModel() async {
     try {
       print('🔍 OpenAI 클라이언트 초기화 시도');
@@ -45,6 +155,9 @@ class _AICounselingBoxState extends State<AICounselingBox> {
           'content': ApiConfig.systemPrompt,
         },
       ];
+
+      // 영상이 선택된 경우 프롬프트 업데이트
+      _updateSystemPrompt();
 
       _modelInitialized = true;
       _modelError = null;
@@ -269,6 +382,111 @@ class _AICounselingBoxState extends State<AICounselingBox> {
     });
   }
 
+  void _onExampleQuestionTap(String question) {
+    _textController.text = question;
+    _sendMessage();
+  }
+
+  Widget _buildExampleQuestions(BuildContext context) {
+    final isVideoSelected = widget.selectedVideoUrl != null;
+    
+    final exampleQuestions = isVideoSelected
+        ? [
+            '중요한 포인트를 요약 정리해줘',
+            '내가 이 강의에서 무엇을 얻을 수 있는가?',
+            '핵심 개념을 이해하기 어려운데 쉽게 설명해줘',
+          ]
+        : [
+            'Lean Startup에 대해 알아보고 싶어',
+            '스포츠 산업의 전망은 어떨까?',
+            'LLM에 대한 이해를 넓히고 싶다면?',
+          ];
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          Center(
+            child: Icon(
+              Icons.chat_bubble_outline,
+              size: 48,
+              color: Colors.white.withOpacity(0.3),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: SelectableText(
+              'AI Tutor와 대화를 시작해보세요!',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: SelectableText(
+              '예시 질문',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...exampleQuestions.map((question) => Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 8, right: 8),
+                child: InkWell(
+                  onTap: () => _onExampleQuestionTap(question),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline,
+                          size: 18,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SelectableText(
+                            question,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!ApiConfig.isApiKeySet) {
@@ -376,25 +594,7 @@ class _AICounselingBoxState extends State<AICounselingBox> {
         SizedBox(
           height: 400, // 고정 높이 설정 (필요에 따라 조정 가능)
           child: _messages.isEmpty && !_isLoading
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.chat_bubble_outline,
-                        size: 48,
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                      const SizedBox(height: 16),
-                      SelectableText(
-                        'AI Tutor와 대화를 시작해보세요!',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+              ? _buildExampleQuestions(context)
               : ListView.separated(
                   controller: _scrollController,
                   itemCount: _messages.length + (_isLoading ? 1 : 0),
@@ -405,7 +605,10 @@ class _AICounselingBoxState extends State<AICounselingBox> {
                       return const _LoadingIndicator();
                     }
                     final message = _messages[index];
-                    return _ChatMessage(message: message);
+                    return _ChatMessage(
+                      message: message,
+                      onVideoSelected: widget.onVideoSelected,
+                    );
                   },
                 ),
         ),
@@ -505,8 +708,12 @@ class _LoadingIndicator extends StatelessWidget {
 }
 
 class _ChatMessage extends StatelessWidget {
-  const _ChatMessage({required this.message});
+  const _ChatMessage({
+    required this.message,
+    this.onVideoSelected,
+  });
   final Message message;
+  final Function(String)? onVideoSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -541,7 +748,10 @@ class _ChatMessage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _MessageBody(content: message.content),
+                _MessageBody(
+                  content: message.content,
+                  onVideoSelected: onVideoSelected,
+                ),
               ],
             ),
           ),
@@ -570,13 +780,34 @@ class _ChatMessage extends StatelessWidget {
 }
 
 class _MessageBody extends StatelessWidget {
-  const _MessageBody({required this.content});
+  const _MessageBody({
+    required this.content,
+    this.onVideoSelected,
+  });
   final String content;
+  final Function(String)? onVideoSelected;
 
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  bool _isYouTubeUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.host.contains('youtube.com') || uri.host.contains('youtu.be');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> _handleUrlTap(String url) async {
+    final fullUrl = url.startsWith('www.') ? 'https://$url' : url;
+    
+    // YouTube URL인 경우 콜백 호출
+    if (_isYouTubeUrl(fullUrl) && onVideoSelected != null) {
+      onVideoSelected!(fullUrl);
+    } else {
+      // 다른 URL은 외부 브라우저로 열기
+      final uri = Uri.parse(fullUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     }
   }
 
@@ -615,7 +846,7 @@ class _MessageBody extends StatelessWidget {
             decoration: TextDecoration.underline,
           ),
           recognizer: TapGestureRecognizer()
-            ..onTap = () => _launchURL(fullUrl),
+            ..onTap = () => _handleUrlTap(fullUrl),
         ),
       );
 

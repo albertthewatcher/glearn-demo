@@ -2,12 +2,46 @@ import 'package:flutter/material.dart';
 
 import 'widgets/sidebar.dart';
 import 'widgets/top_hero_banner.dart';
-import 'widgets/recommended_card.dart';
+import 'widgets/recommended_courses_section.dart';
 import 'widgets/ai_counseling_box.dart';
 import 'widgets/profile_panel.dart';
+import 'widgets/youtube_player.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String? _selectedVideoUrl;
+  String? _selectedVideoTitle;
+  String? _selectedVideoDescription;
+
+  void _handleVideoSelected(String videoUrl) {
+    setState(() {
+      _selectedVideoUrl = videoUrl;
+      // 영상 정보는 YouTubePlayer에서 로드되므로 여기서는 URL만 저장
+      _selectedVideoTitle = null;
+      _selectedVideoDescription = null;
+    });
+  }
+
+  void _closeVideoPlayer() {
+    setState(() {
+      _selectedVideoUrl = null;
+      _selectedVideoTitle = null;
+      _selectedVideoDescription = null;
+    });
+  }
+
+  void _onVideoInfoLoaded(String title, String description) {
+    setState(() {
+      _selectedVideoTitle = title;
+      _selectedVideoDescription = description;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,115 +53,38 @@ class HomeScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Sidebar(),
+              Sidebar(
+                onReset: _closeVideoPlayer,
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const TopHeroBanner(),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SelectableText(
-                            'Recommended Courses',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.arrow_back_ios,
-                                    size: 12,
-                                  ),
-                                  onPressed: () {},
-                                  padding: EdgeInsets.zero,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 12,
-                                  ),
-                                  onPressed: () {},
-                                  padding: EdgeInsets.zero,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: const [
-                            RecommendedCard(
-                              category: 'Business',
-                              title:
-                                  '5 Takeaways For The Lean Startup\nBusiness Principles For Success',
-                              subtitle: 'Eric Ries, Author Of The Lean Startup',
-                              progress: 0.3,
-                              progressColor: Colors.blue,
-                              thumbnail: AssetImage(
-                                'assets/images/thumbnail-lean.jpg',
-                              ),
+                      // 유튜브 플레이어가 구동 중일 때는 배너 숨김
+                      if (_selectedVideoUrl == null) ...[
+                        const TopHeroBanner(),
+                        const SizedBox(height: 30),
+                      ],
+                      // 조건부 렌더링: 영상이 선택되었으면 플레이어, 아니면 RecommendedCoursesSection
+                      _selectedVideoUrl != null
+                          ? YouTubePlayer(
+                              videoUrl: _selectedVideoUrl!,
+                              onClose: _closeVideoPlayer,
+                              onVideoInfoLoaded: _onVideoInfoLoaded,
+                            )
+                          : RecommendedCoursesSection(
+                              onVideoSelected: _handleVideoSelected,
                             ),
-                            SizedBox(width: 14),
-                            RecommendedCard(
-                              category: 'Technology',
-                              title:
-                                  'Sound On For Sora 2\nIntroducing The Sora App',
-                              subtitle:
-                                  'OpenAI, AI Research & Deployment Company',
-                              progress: 0.6,
-                              progressColor: Colors.green,
-                              thumbnail: AssetImage(
-                                'assets/images/thumbnail-sora.jpg',
-                              ),
-                            ),
-                            SizedBox(width: 14),
-                            RecommendedCard(
-                              category: 'Communications',
-                              title:
-                                  "Secret To Great Public Speaking\nby TED Founder",
-                              subtitle: 'Chris Anderson, Head Of TED',
-                              progress: 0.8,
-                              progressColor: Colors.orange,
-                              thumbnail: AssetImage(
-                                'assets/images/thumbnail-ted.jpg',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       const SizedBox(height: 24),
-                      const AICounselingBox(),
+                      AICounselingBox(
+                        key: ValueKey(_selectedVideoUrl ?? 'default'),
+                        onVideoSelected: _handleVideoSelected,
+                        selectedVideoUrl: _selectedVideoUrl,
+                        selectedVideoTitle: _selectedVideoTitle,
+                        selectedVideoDescription: _selectedVideoDescription,
+                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
