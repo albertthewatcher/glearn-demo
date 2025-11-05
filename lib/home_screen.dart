@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          SelectableText(
                             'Recommended Courses',
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(

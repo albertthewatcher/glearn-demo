@@ -73,7 +73,7 @@ class Page2Screen extends StatelessWidget {
                                           color: Colors.white24,
                                         ),
                                       ),
-                                      child: Text(
+                                      child: SelectableText(
                                         'BUSINESS',
                                         style: Theme.of(context)
                                             .textTheme
@@ -96,11 +96,9 @@ class Page2Screen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
-                                child: Text(
+                                child: SelectableText(
                                   'The Lean Startup - How Today\'s Entrepreneurs Use Continuous Innovation',
                                   maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: true,
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleMedium!
@@ -115,10 +113,9 @@ class Page2Screen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
-                                child: Text(
+                                child: SelectableText(
                                   "Eric Ries, Author Of The Lean Startup",
                                   maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium!

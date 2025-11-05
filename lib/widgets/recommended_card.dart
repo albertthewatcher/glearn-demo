@@ -35,10 +35,7 @@ class RecommendedCard extends StatelessWidget {
             height: 180,
             decoration: BoxDecoration(
               color: GalaxyColors.slate,
-              image: DecorationImage(
-                image: thumbnail,
-                fit: BoxFit.cover,
-              ),
+              image: DecorationImage(image: thumbnail, fit: BoxFit.cover),
             ),
           ),
           Padding(
@@ -47,13 +44,16 @@ class RecommendedCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.white24),
                   ),
-                  child: Text(
+                  child: SelectableText(
                     category.toUpperCase(),
                     style: Theme.of(context).textTheme.labelSmall!.copyWith(
                       letterSpacing: 0.6,
@@ -67,26 +67,23 @@ class RecommendedCard extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
+            child: SelectableText(
               title,
               maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              softWrap: true,
-              style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
+            child: SelectableText(
               subtitle,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                color: Colors.white70,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium!.copyWith(color: Colors.white70),
             ),
           ),
           const SizedBox(height: 12),

@@ -25,7 +25,7 @@ class Sidebar extends StatelessWidget {
                 height: 48,
               ),
               const SizedBox(width: 8),
-              Text(
+              SelectableText(
                 'Galaxy\nLearning',
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
                   height: 1.1,
@@ -110,7 +110,7 @@ class _Section extends StatelessWidget {
           child: Builder(
             builder: (context) {
               final base = Theme.of(context).textTheme.labelSmall!;
-              return Text(
+              return SelectableText(
                 title,
                 style: base.copyWith(
                   color: Colors.white,
@@ -167,7 +167,7 @@ class _Item extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: SelectableText(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   color: isActive ? Colors.white : Colors.white70,

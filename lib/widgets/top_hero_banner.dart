@@ -24,7 +24,7 @@ class TopHeroBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          SelectableText(
             'Welcome to Galaxy Learning',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: Colors.white,
@@ -32,11 +32,11 @@ class TopHeroBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          SelectableText(
             'Discover courses and learn from the best',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white70,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
           ),
         ],
       ),

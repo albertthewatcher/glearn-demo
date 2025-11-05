@@ -22,7 +22,7 @@ class ProfilePanel extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                SelectableText(
                   'PROFILE',
                   style: text.labelSmall!.copyWith(
                     color: Colors.white,
@@ -52,7 +52,7 @@ class ProfilePanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                SelectableText(
                   'Shohei Ohtani',
                   style: text.titleMedium?.copyWith(
                     fontSize: 20,
@@ -80,7 +80,7 @@ class ProfilePanel extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                SelectableText(
                   'FRIENDS',
                   style: text.labelSmall!.copyWith(
                     color: Colors.white,
@@ -160,8 +160,11 @@ class _FriendTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: Theme.of(context).textTheme.bodyMedium),
-                Text(
+                SelectableText(
+                  name,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                SelectableText(
                   role,
                   style: Theme.of(
                     context,

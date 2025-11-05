@@ -31,8 +31,107 @@
 
   <title>glearn</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* 드래그앤드롭 및 텍스트 선택 활성화 */
+    * {
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      user-select: text !important;
+      -webkit-touch-callout: default !important;
+    }
+    
+    body {
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      user-select: text !important;
+    }
+    
+    /* Flutter 앱의 모든 요소에 텍스트 선택 활성화 */
+    flt-glass-pane,
+    flt-scene-host,
+    flt-scene,
+    canvas,
+    [style*="user-select"] {
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      user-select: text !important;
+      pointer-events: auto !important;
+    }
+    
+    /* Flutter 앱이 드래그를 방해하지 않도록 - 하지만 텍스트 선택은 허용 */
+    flt-glass-pane {
+      pointer-events: auto;
+    }
+  </style>
 </head>
 <body>
+  <script>
+    // 드래그앤드롭 이벤트 활성화
+    function enableDragAndDrop() {
+      // 기본 드래그 이벤트가 차단되지 않도록
+      document.body.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+      
+      document.body.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+      
+      // 텍스트 선택 활성화
+      document.body.style.webkitUserSelect = 'text';
+      document.body.style.mozUserSelect = 'text';
+      document.body.style.msUserSelect = 'text';
+      document.body.style.userSelect = 'text';
+      
+      // Flutter 앱의 모든 요소에 텍스트 선택 활성화
+      const applyTextSelection = () => {
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(el => {
+          if (el instanceof HTMLElement) {
+            el.style.webkitUserSelect = 'text';
+            el.style.mozUserSelect = 'text';
+            el.style.msUserSelect = 'text';
+            el.style.userSelect = 'text';
+          }
+        });
+        
+        const flutterApp = document.querySelector('flt-glass-pane');
+        if (flutterApp) {
+          flutterApp.style.userSelect = 'text';
+          flutterApp.style.webkitUserSelect = 'text';
+          flutterApp.style.mozUserSelect = 'text';
+          flutterApp.style.msUserSelect = 'text';
+        }
+      };
+      
+      applyTextSelection();
+      
+      // MutationObserver로 새로 추가되는 요소에도 적용
+      const observer = new MutationObserver(() => {
+        applyTextSelection();
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+    
+    // DOM이 로드되면 실행
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enableDragAndDrop);
+    } else {
+      enableDragAndDrop();
+    }
+    
+    // Flutter 앱이 완전히 로드된 후에도 다시 실행
+    window.addEventListener('flutter-first-frame', enableDragAndDrop);
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
