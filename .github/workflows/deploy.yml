@@ -35,7 +35,7 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
           echo "🏗️ Building Flutter web app..."
-          flutter build web --release --base-href="/glearn-demo/" --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY:-}" --dart-define=YOUTUBE_API_KEY="${YOUTUBE_API_KEY:-}"
+          flutter build web --release --base-href="/glearn-demo/" --no-wasm-dry-run --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY:-}" --dart-define=YOUTUBE_API_KEY="${YOUTUBE_API_KEY:-}"
           echo "✅ Build completed"
           ls -la build/web/ | head -10
 
