@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import '../data/conversation_data.dart';
 import '../theme.dart';
 import '../config/api_config.dart';
@@ -36,12 +38,11 @@ class _AICounselingBoxState extends State<AICounselingBox> {
       print('🔍 OpenAI 클라이언트 초기화 시도');
       print('🔑 API 키 확인: ${ApiConfig.openaiApiKey.substring(0, 10)}...');
 
-      // 시스템 메시지 추가
+      // 시스템 메시지 추가 (ApiConfig에서 가져옴)
       _chatHistory = [
         {
           'role': 'system',
-          'content':
-              '당신은 친절하고 전문적인 AI 튜터입니다. 학생의 질문에 대해 명확하고 도움이 되는 답변을 제공해주세요. 학습 관련 질문에 특히 잘 답변하며, 필요시 관련 강의나 자료를 추천할 수 있습니다. 답변은 한국어로 작성해주세요.',
+          'content': ApiConfig.systemPrompt,
         },
       ];
 
@@ -128,11 +129,14 @@ class _AICounselingBoxState extends State<AICounselingBox> {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-        final assistantMessage =
+        var assistantMessage =
             responseData['choices'][0]['message']['content'] as String;
         print(
           '✅ 응답 받음: ${assistantMessage.substring(0, assistantMessage.length > 50 ? 50 : assistantMessage.length)}...',
         );
+
+        // 유튜브 검색어를 실제 링크로 대체
+        assistantMessage = await _replaceSearchKeywordsWithLinks(assistantMessage);
 
         // AI 응답을 채팅 히스토리에 추가
         _chatHistory.add({
@@ -192,6 +196,65 @@ class _AICounselingBoxState extends State<AICounselingBox> {
       });
       _scrollToBottom();
     }
+  }
+
+  Future<String> _searchYouTubeVideo(String query) async {
+    if (ApiConfig.youtubeApiKey.isEmpty) {
+      // API 키가 없으면 검색 URL 반환
+      return 'https://www.youtube.com/results?search_query=${Uri.encodeComponent(query)}';
+    }
+
+    try {
+      final url = Uri.parse(
+        'https://www.googleapis.com/youtube/v3/search'
+        '?part=snippet&type=video&maxResults=1&q=${Uri.encodeComponent(query)}'
+        '&key=${ApiConfig.youtubeApiKey}',
+      );
+
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final items = data['items'] as List<dynamic>?;
+        
+        if (items != null && items.isNotEmpty) {
+          final videoId = items[0]['id']['videoId'] as String;
+          return 'https://www.youtube.com/watch?v=$videoId';
+        }
+      }
+    } catch (e) {
+      print('❌ 유튜브 검색 실패: $e');
+    }
+    // 검색 실패 시 검색 URL 반환
+    return 'https://www.youtube.com/results?search_query=${Uri.encodeComponent(query)}';
+  }
+
+  Future<String> _replaceSearchKeywordsWithLinks(String text) async {
+    // [검색어] 패턴을 찾아서 실제 유튜브 링크로 대체
+    final searchPattern = RegExp(r'\[검색어\]\s*(.+?)(?=\n|$)');
+    final matches = searchPattern.allMatches(text);
+    
+    String result = text;
+    int offset = 0;
+    
+    for (final match in matches) {
+      final searchQuery = match.group(1)?.trim() ?? '';
+      if (searchQuery.isNotEmpty) {
+        print('🔍 유튜브 검색: $searchQuery');
+        final videoUrl = await _searchYouTubeVideo(searchQuery);
+        
+        // [검색어] 키워드를 실제 링크로 대체
+        final before = result.substring(0, match.start + offset);
+        final after = result.substring(match.end + offset);
+        result = '$before$videoUrl$after';
+        offset += videoUrl.length - match.group(0)!.length;
+        print('✅ 링크 생성: $videoUrl');
+      }
+    }
+    
+    return result;
   }
 
   void _scrollToBottom() {
@@ -510,6 +573,68 @@ class _MessageBody extends StatelessWidget {
   const _MessageBody({required this.content});
   final String content;
 
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  List<TextSpan> _parseTextWithUrls(String text, TextStyle? baseStyle) {
+    final textSpans = <TextSpan>[];
+    // URL 패턴: http://, https://, www.로 시작하는 URL 또는 youtube.com/watch 등의 패턴
+    final urlPattern = RegExp(
+      r'(https?://[^\s]+|www\.[^\s]+|youtube\.com/[^\s]+|youtu\.be/[^\s]+)',
+      caseSensitive: false,
+    );
+
+    int lastIndex = 0;
+    final matches = urlPattern.allMatches(text);
+
+    for (final match in matches) {
+      // URL 이전 텍스트
+      if (match.start > lastIndex) {
+        textSpans.add(
+          TextSpan(
+            text: text.substring(lastIndex, match.start),
+            style: baseStyle,
+          ),
+        );
+      }
+
+      // URL 부분
+      final url = match.group(0)!;
+      // www.로 시작하는 경우 http://를 추가
+      final fullUrl = url.startsWith('www.') ? 'https://$url' : url;
+      
+      textSpans.add(
+        TextSpan(
+          text: url,
+          style: baseStyle?.copyWith(
+            color: Colors.blueAccent,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => _launchURL(fullUrl),
+        ),
+      );
+
+      lastIndex = match.end;
+    }
+
+    // 남은 텍스트
+    if (lastIndex < text.length) {
+      textSpans.add(
+        TextSpan(
+          text: text.substring(lastIndex),
+          style: baseStyle,
+        ),
+      );
+    }
+
+    return textSpans.isEmpty ? [TextSpan(text: text, style: baseStyle)] : textSpans;
+  }
+
   @override
   Widget build(BuildContext context) {
     final base = Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -543,15 +668,20 @@ class _MessageBody extends StatelessWidget {
         // 일반 텍스트 또는 시간 정보가 있는 텍스트
         final match = timeIndex.firstMatch(line);
         if (match == null) {
-          textSpans.add(
-            TextSpan(text: line + (isLastLine ? '' : '\n'), style: base),
+          // URL이 포함된 텍스트 파싱
+          final parsedSpans = _parseTextWithUrls(
+            line + (isLastLine ? '' : '\n'),
+            base,
           );
+          textSpans.addAll(parsedSpans);
         } else {
           final before = line.substring(0, match.start);
           final mid = line.substring(match.start, match.end);
           final after = line.substring(match.end);
-          textSpans.addAll([
-            TextSpan(text: before, style: base),
+          
+          // before와 after에도 URL이 있을 수 있으므로 파싱
+          textSpans.addAll(_parseTextWithUrls(before, base));
+          textSpans.add(
             TextSpan(
               text: mid,
               style: base?.copyWith(
@@ -559,8 +689,10 @@ class _MessageBody extends StatelessWidget {
                 color: Colors.redAccent,
               ),
             ),
-            TextSpan(text: after + (isLastLine ? '' : '\n'), style: base),
-          ]);
+          );
+          textSpans.addAll(
+            _parseTextWithUrls(after + (isLastLine ? '' : '\n'), base),
+          );
         }
       }
     }
